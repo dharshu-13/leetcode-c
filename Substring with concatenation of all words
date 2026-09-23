@@ -1,0 +1,92 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+typedef struct {
+    char* word;
+    int count;
+} WordFreq;
+
+int compareWords(const void* a, const void* b) {
+    return strcmp(((WordFreq*)a)->word, ((WordFreq*)b)->word);
+}
+
+int findWordIndex(WordFreq* uniqueWords, int uniqueSize, const char* target, int wordLen) {
+    int low = 0, high = uniqueSize - 1;
+    while (low <= high) {
+        int mid = low + (high - low) / 2;
+        int cmp = strncmp(uniqueWords[mid].word, target, wordLen);
+        if (cmp == 0) return mid;
+        if (cmp < 0) low = mid + 1;
+        else high = mid - 1;
+    }
+    return -1;
+}
+int* findSubstring(char* s, char** words, int wordsSize, int* returnSize) {
+    *returnSize = 0;
+    if (!s || wordsSize == 0) return NULL;
+
+    int sLen = strlen(s);
+    int wordLen = strlen(words[0]);
+    int totalLen = wordLen * wordsSize;
+    if (sLen < totalLen) return NULL;
+
+    WordFreq* uniqueWords = malloc(wordsSize * sizeof(WordFreq));
+    for (int i = 0; i < wordsSize; i++) {
+        uniqueWords[i].word = words[i];
+        uniqueWords[i].count = 1;
+    }
+    
+    qsort(uniqueWords, wordsSize, sizeof(WordFreq), compareWords);
+    
+    int uniqueSize = 0;
+    for (int i = 1; i < wordsSize; i++) {
+        if (strcmp(uniqueWords[uniqueSize].word, uniqueWords[i].word) == 0) {
+            uniqueWords[uniqueSize].count++;
+        } else {
+            uniqueSize++;
+            uniqueWords[uniqueSize] = uniqueWords[i];
+        }
+    }
+    uniqueSize++; 
+
+    int* result = malloc(sLen * sizeof(int));
+    int* currCount = malloc(uniqueSize * sizeof(int));
+
+    for (int i = 0; i < wordLen; i++) {
+        int left = i, right = i, count = 0;
+        memset(currCount, 0, uniqueSize * sizeof(int));
+
+        while (right + wordLen <= sLen) {
+            
+            char* wordStart = s + right;
+            right += wordLen;
+
+            int idx = findWordIndex(uniqueWords, uniqueSize, wordStart, wordLen);
+
+            if (idx != -1) {
+                currCount[idx]++;
+                count++;
+
+              
+                while (currCount[idx] > uniqueWords[idx].count) {
+                    int leftIdx = findWordIndex(uniqueWords, uniqueSize, s + left, wordLen);
+                    currCount[leftIdx]--;
+                    left += wordLen;
+                    count--;
+                }
+
+                if (count == wordsSize) {
+                    result[(*returnSize)++] = left;
+                }
+            } else {
+                memset(currCount, 0, uniqueSize * sizeof(int));
+                count = 0;
+                left = right;
+            }
+        }
+        }
+
+    free(uniqueWords);
+    free(currCount);
+    return result;
+}
