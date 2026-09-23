@@ -1,0 +1,62 @@
+const char* phone_map[] = {
+    "",     // 0
+    "",     // 1
+    "abc",  // 2
+    "def",  // 3
+    "ghi",  // 4
+    "jkl",  // 5
+    "mno",  // 6
+    "pqrs", // 7
+    "tuv",  // 8
+    "wxyz"  // 9
+};
+
+// Backtracking helper function
+void backtrack(const char* digits, int index, char* current_path, char** result, int* returnSize) {
+    // Base case: if we processed all digits, add the combination to result
+    if (digits[index] == '\0') {
+        current_path[index] = '\0'; // Null-terminate the string
+        result[*returnSize] = strdup(current_path); // Duplicate and save
+        (*returnSize)++;
+        return;
+    }
+
+    // Get the letters corresponding to the current digit
+    int digit_value = digits[index] - '0';
+    const char* letters = phone_map[digit_value];
+
+    // Loop through the possible letters
+    for (int i = 0; letters[i] != '\0'; i++) {
+        current_path[index] = letters[i]; // Choose
+        backtrack(digits, index + 1, current_path, result, returnSize); // Recurse
+    }
+}/**
+ * Note: The returned array must be malloced, assume caller calls free().
+ */
+char** letterCombinations(char* digits, int* returnSize) {
+    *returnSize = 0;
+    int len = strlen(digits);
+    if (len == 0) {
+        return NULL; 
+}
+ int max_combinations = 1;
+    for (int i = 0; i < len; i++) {
+        int digit = digits[i] - '0';
+        if (digit == 7 || digit == 9) max_combinations *= 4;
+        else max_combinations *= 3;
+    }
+
+    // Allocate array of string pointers
+    char** result = (char**)malloc(max_combinations * sizeof(char*));
+    
+    // Buffer to hold the current combination path (+1 for null terminator)
+    char* current_path = (char*)malloc((len + 1) * sizeof(char));
+
+    // Start backtracking
+    backtrack(digits, 0, current_path, result, returnSize);
+
+    // Free temporary path buffer
+    free(current_path);
+
+    return result;
+}
