@@ -1,0 +1,32 @@
+#include <stdio.h>
+
+int firstMissingPositive(int* nums, int numsSize) {
+    for (int i = 0; i < numsSize; i++) {
+       
+        while (nums[i] >= 1 && nums[i] <= numsSize && nums[nums[i] - 1] != nums[i]) {
+            int correct_idx = nums[i] - 1;
+            
+            int temp = nums[i];
+            nums[i] = nums[correct_idx];
+            nums[correct_idx] = temp;
+        }
+    }
+
+    for (int i = 0; i < numsSize; i++) {
+        if (nums[i] != i + 1) {
+            return i + 1;
+        }
+    }
+
+    return numsSize + 1;
+}
+
+int main() {
+    int nums[] = {3, 4, -1, 1};
+    int size = sizeof(nums) / sizeof(nums[0]);
+    
+    int missing = firstMissingPositive(nums, size);
+    printf("The smallest missing positive integer is: %d\n", missing);
+    
+    return 0;
+}
