@@ -1,0 +1,95 @@
+/**
+ * Note: The returned array must be malloced, assume caller calls free().
+ */
+ typedef struct {
+    char** sentences;
+    int count;
+    bool is_memoized;
+} MemoNode;
+
+ bool is_word_in_dict(const char* s, int start, int end, char** wordDict, int wordDictSize) {
+    int len = end - start;
+    for (int i = 0; i < wordDictSize; i++) {
+        if ((int)strlen(wordDict[i]) == len && strncmp(s + start, wordDict[i], len) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// Recursive DFS function with memoization
+MemoNode dfs(const char* s, int start_idx, int len, char** wordDict, int wordDictSize, MemoNode* memo) {
+    // If already computed, return the cached results
+    if (memo[start_idx].is_memoized) {
+        return memo[start_idx];
+    }
+
+    MemoNode result;
+    result.sentences = NULL;
+    result.count = 0;
+    result.is_memoized = true;
+
+    // Base case: Reached the end of the string
+    if (start_idx == len) {
+        result.sentences = (char**)malloc(sizeof(char*));
+        result.sentences[0] = strdup("");
+        result.count = 1;
+        return result;
+    }
+
+    // Try all possible prefix splits
+    for (int end_idx = start_idx + 1; end_idx <= len; end_idx++) {
+        if (is_word_in_dict(s, start_idx, end_idx, wordDict, wordDictSize)) {
+            // Extract the matching word
+            int word_len = end_idx - start_idx;
+            char* word = (char*)malloc(word_len + 1);
+            strncpy(word, s + start_idx, word_len);
+            word[word_len] = '\0';
+
+            // Recurse for the remainder of the string
+            MemoNode sub_result = dfs(s, end_idx, len, wordDict, wordDictSize, memo);
+
+            if (sub_result.count > 0) {
+                result.sentences = (char**)realloc(result.sentences, (result.count + sub_result.count) * sizeof(char*));
+                for (int i = 0; i < sub_result.count; i++) {
+                    char* sub = sub_result.sentences[i];
+                    char* combined;
+                    
+                    if (strlen(sub) > 0) {
+                        combined = (char*)malloc(strlen(word) + 1 + strlen(sub) + 1);
+                        sprintf(combined, "%s %s", word, sub);
+                    } else {
+                        combined = strdup(word);
+                    }
+                    result.sentences[result.count++] = combined;
+                }
+            }
+            free(word);
+        }
+    }
+
+    // Store the computed result into the memoization table
+    memo[start_idx] = result;
+    return result;
+}
+char** wordBreak(char* s, char** wordDict, int wordDictSize, int* returnSize) {
+    int len = strlen(s);
+    
+    // Allocate memory for memoization table
+    MemoNode* memo = (MemoNode*)calloc(len + 1, sizeof(MemoNode));
+
+    MemoNode final_result = dfs(s, 0, len, wordDict, wordDictSize, memo);
+
+    *returnSize = final_result.count;
+    
+    // Clean up only the memo structure metadata (keep the actual strings for the return)
+    for (int i = 1; i <= len; i++) {
+        if (memo[i].is_memoized && memo[i].count > 0) {
+            // Free the arrays of pointers for internal states, but not the final answer strings
+            free(memo[i].sentences);
+        }
+    }
+    free(memo);
+
+    return final_result.sentences;
+}
